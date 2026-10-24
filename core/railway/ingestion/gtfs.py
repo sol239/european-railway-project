@@ -23,11 +23,14 @@ async def download_gtfs_archive() -> Path:
     return ARCHIVE_DOWNLOAD_PATH
 
 
-def extract_gtfs_archive() -> list[Path]:
-    """Extract GTFS files from the downloaded ZIP archive.
+def extract_gtfs_archive(archive_path: Path) -> list[Path]:
+    """Extract GTFS files from the given ZIP archive.
 
     Extracts all archive contents into the configured staging directory
     and returns paths to the extracted GTFS text files.
+
+    Args:
+        archive_path (Path): Path to the GTFS ZIP archive to extract.
 
     Returns:
         list[Path]: Paths to the extracted GTFS text files.
@@ -36,7 +39,7 @@ def extract_gtfs_archive() -> list[Path]:
         FileNotFoundError: If the GTFS archive does not exist.
         BadZipFile: If the archive is invalid or corrupted.
     """
-    with ZipFile(ARCHIVE_DOWNLOAD_PATH) as archive:
+    with ZipFile(archive_path) as archive:
         archive.extractall(settings.staging_dir)
 
         return [
