@@ -1,0 +1,7 @@
+jupyterlab
+notebook
+ipykernel
+pyspark
+pandas
+pyarrow
+fetching-library-python @ git+https://github.com/sol239/fetching-library-python.git
