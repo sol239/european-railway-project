@@ -1,7 +1,16 @@
+# Jupyter
 jupyterlab
 notebook
 ipykernel
+
+# Data Processing
 pyspark
 pandas
 pyarrow
+
+# Orchestration
+apache-airflow==3.2.2
+apache-airflow-providers-postgres
+
+# Utilities
 fetching-library-python @ git+https://github.com/sol239/fetching-library-python.git
