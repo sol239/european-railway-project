@@ -39,6 +39,41 @@ x-airflow-common: &airflow-common
       condition: service_completed_successfully
 
 services:
+  frontend:
+    build: ./frontend
+    env_file:
+      - infra/lakehouse/.env
+    ports:
+      - "127.0.0.1:7007:3000"
+    environment:
+      NUXT_TRINO_URL: http://trino:8080
+      NUXT_TRINO_USER: admin
+      NUXT_MINIO_ENDPOINT: http://minio:9000
+      NUXT_MINIO_BUCKET: ${S3_BUCKET:-railway}
+    networks:
+      - default
+      - lakehouse
+    depends_on:
+      trino:
+        condition: service_healthy
+    restart: unless-stopped
+
+  trino:
+    image: trinodb/trino:476
+    ports:
+      - "127.0.0.1:7006:8080"
+    env_file:
+      - infra/lakehouse/.env
+    environment:
+      S3_BUCKET: ${S3_BUCKET:-railway}
+    volumes:
+      - ./infra/trino/catalog:/etc/trino/catalog:ro
+      - ./infra/trino/jvm.config:/etc/trino/jvm.config:ro
+    networks:
+      - default
+      - lakehouse
+    restart: unless-stopped
+
   airflow-work-init:
     image: european-railway-airflow:3.2.2
     user: "0:0"

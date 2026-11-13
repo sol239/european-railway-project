@@ -81,6 +81,29 @@ class LayerTests(unittest.TestCase):
                 self.assertEqual(result[key].max(), old[key].max() + 1)
                 assert_frame_equal(result, builder(updated, existing_dim=result, **kwargs))
 
+    def test_station_coordinates_are_numeric_and_migrate_existing_dimensions(self):
+        source = sources()['stops']
+        source['stop_lat'] = ['48.58511', '48.58512']
+        source['stop_lon'] = ['7.733882', '7.733883']
+        silver = clean_source('stops', source)
+        self.assertEqual(silver.iloc[0]['latitude'], 48.58511)
+        self.assertEqual(silver.iloc[0]['longitude'], 7.733882)
+        self.assertEqual(str(silver['latitude'].dtype), 'Float64')
+        assert_frame_equal(silver, clean_source('stops', silver))
+        old = build_dim_station(silver).drop(columns=['latitude', 'longitude'])
+        old['station_key'] = 543
+        gold = build_dim_station(silver, existing_dim=old)
+        self.assertEqual(len(gold), 1)
+        self.assertEqual(gold.iloc[0]['station_key'], 543)
+        self.assertEqual(gold.iloc[0]['longitude'], 7.733882)
+        self.assertEqual(gold.iloc[0]['latitude'], 48.58511)
+        source['stop_lat'] = ['invalid', '91']
+        source['stop_lon'] = ['', '181']
+        invalid = clean_source('stops', source)
+        self.assertTrue(invalid[['latitude', 'longitude']].isna().all().all())
+        updated = build_dim_station(invalid, existing_dim=gold)
+        self.assertTrue(updated[['latitude', 'longitude']].isna().all().all())
+
     def test_gold_resolves_platform_visit_and_rejects_unresolved_keys(self):
         s = self.silver
         kwargs = dict(stop_times_df=s['stop_times'], trips_df=s['trips'], stops_df=s['stops'],
