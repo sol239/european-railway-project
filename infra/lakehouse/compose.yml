@@ -1,0 +1,46 @@
+services:
+  iceberg-catalog-db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: iceberg
+      POSTGRES_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+      POSTGRES_DB: iceberg
+    ports:
+      - "127.0.0.1:7005:5432"
+    volumes:
+      - iceberg_catalog:/var/lib/postgresql/data
+    networks:
+      - lakehouse
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iceberg -d iceberg"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: railway-minio:RELEASE.2025-10-15T17-29-55Z
+    build:
+      context: .
+      dockerfile: Dockerfile.minio
+    container_name: railway-minio
+    networks:
+      - lakehouse
+    command: server /data --console-address ":9001"
+    ports:
+      - "127.0.0.1:7004:9000"
+      - "127.0.0.1:7003:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+volumes:
+  iceberg_catalog:
+  minio_data:
+
+networks:
+  lakehouse:
+    name: railway-lakehouse

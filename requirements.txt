@@ -4,13 +4,16 @@ notebook
 ipykernel
 
 # Data Processing
-pyspark
 pandas
 pyarrow
+duckdb==1.4.5
 
 # Orchestration
 apache-airflow==3.2.2
-apache-airflow-providers-postgres
 
 # Utilities
 fetching-library-python @ git+https://github.com/sol239/fetching-library-python.git
+
+boto3
+
+pyiceberg[pyarrow,sql-postgres]==0.10.0

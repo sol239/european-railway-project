@@ -2,8 +2,18 @@ x-airflow-common: &airflow-common
   image: european-railway-airflow:3.2.2
   build: .
   user: "${AIRFLOW_UID:-50000}:0"
+  env_file:
+    - infra/lakehouse/.env
+  networks:
+    - default
+    - lakehouse
   environment: &airflow-environment
     PYTHONPATH: /opt/airflow
+    S3_ENDPOINT: http://minio:9000
+    S3_BUCKET: ${S3_BUCKET:-railway}
+    ICEBERG_CATALOG_HOST: iceberg-catalog-db
+    ICEBERG_CATALOG_PORT: "5432"
+    RAILWAY_WORK_DIR: /tmp/railway
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
@@ -16,7 +26,7 @@ x-airflow-common: &airflow-common
   volumes: &airflow-volumes
     - ./dags:/opt/airflow/dags
     - ./core:/opt/airflow/core:ro
-    - ./data:/opt/airflow/data
+    - airflow_scratch:/tmp/railway
     - ./logs:/opt/airflow/logs
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
@@ -25,8 +35,36 @@ x-airflow-common: &airflow-common
       condition: service_healthy
     airflow-init:
       condition: service_completed_successfully
+    airflow-work-init:
+      condition: service_completed_successfully
 
 services:
+  airflow-work-init:
+    image: european-railway-airflow:3.2.2
+    user: "0:0"
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - >-
+        mkdir -p /tmp/railway &&
+        chown ${AIRFLOW_UID:-50000}:0 /tmp/railway &&
+        chmod 2775 /tmp/railway
+    volumes:
+      - airflow_scratch:/tmp/railway
+    restart: "no"
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    ports:
+      - "127.0.0.1:7002:3000"
+    environment:
+      MB_DB_TYPE: h2
+      MB_JETTY_HOST: 0.0.0.0
+    volumes:
+      - metabase_data:/metabase-data
+    restart: unless-stopped
+
   postgres:
     image: postgres:17
     restart: unless-stopped
@@ -55,7 +93,7 @@ services:
     command: api-server
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:7001:8080"
 
   airflow-scheduler:
     <<: *airflow-common
@@ -74,3 +112,10 @@ services:
 
 volumes:
   postgres_data:
+  metabase_data:
+  airflow_scratch:
+
+networks:
+  lakehouse:
+    external: true
+    name: railway-lakehouse

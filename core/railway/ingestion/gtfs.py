@@ -2,13 +2,11 @@ from zipfile import ZipFile
 from fetching_library_python import FetchingHelper
 import pandas as pd
 from pathlib import Path
-from core.config.settings import settings
-
-ARCHIVE_DOWNLOAD_PATH = settings.raw_dir / "data-gtfs.zip"
 
 
-async def download_gtfs_archive() -> Path:
-    """Download the SNCF GTFS archive to the configured location.
+
+async def download_gtfs_archive(archive_path: Path) -> Path:
+    """Download the SNCF GTFS archive to the supplied run-scoped location.
 
     Returns:
         Path: Location of the downloaded GTFS ZIP archive.
@@ -18,15 +16,16 @@ async def download_gtfs_archive() -> Path:
     """
     gtfs_url = "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip"
 
-    await FetchingHelper.download_file(gtfs_url, path=ARCHIVE_DOWNLOAD_PATH)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    await FetchingHelper.download_file(gtfs_url, path=archive_path)
 
-    return ARCHIVE_DOWNLOAD_PATH
+    return archive_path
 
 
-def extract_gtfs_archive(archive_path: Path) -> list[Path]:
+def extract_gtfs_archive(archive_path: Path, staging_dir: Path) -> list[Path]:
     """Extract GTFS files from the given ZIP archive.
 
-    Extracts all archive contents into the configured staging directory
+    Extracts all archive contents into the supplied staging directory
     and returns paths to the extracted GTFS text files.
 
     Args:
@@ -39,11 +38,12 @@ def extract_gtfs_archive(archive_path: Path) -> list[Path]:
         FileNotFoundError: If the GTFS archive does not exist.
         BadZipFile: If the archive is invalid or corrupted.
     """
+    staging_dir.mkdir(parents=True, exist_ok=True)
     with ZipFile(archive_path) as archive:
-        archive.extractall(settings.staging_dir)
+        archive.extractall(staging_dir)
 
         return [
-            settings.staging_dir / name
+            staging_dir / name
             for name in archive.namelist()
             if name.endswith(".txt")
         ]

@@ -12,13 +12,7 @@ def build_dim_station(
     stops_df = stops_df.rename(
         columns={"stop_id": "station_id", "stop_name": "station_name"}
     )
-    stops_df["station_id"] = stops_df["station_id"].str.strip()
-    stops_df["station_name"] = stops_df["station_name"].str.strip().str.lower()
-    stops_df = (
-        stops_df.dropna(subset=["station_id", "station_name"])
-        .drop_duplicates(subset=["station_id"])
-        .reset_index(drop=True)
-    )
+    stops_df = stops_df.dropna(subset=["station_id", "station_name"]).reset_index(drop=True)
 
     if existing_dim is None:
         dim_station = stops_df.copy()

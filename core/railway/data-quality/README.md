@@ -2,7 +2,7 @@
 
 ## Source Data Checks
 
-Source checks are implemented in `core/railway/data-quality/source.py`. Call `validate_source(archive_path, staging_dir)` to evaluate DQ1–DQ19, DQ21–DQ27, and DQ29–DQ36; it raises `DataQualityError` containing all failures. Individual checks can also be called independently. The pipeline runs these checks in `source_data_quality` after ingestion and before transformations. The dimension validation referenced in `transformed.py` is not yet implemented.
+Source checks are implemented in `core/railway/data-quality/source.py`. Call `validate_source(archive_path, staging_dir)` to evaluate DQ1–DQ19, DQ21–DQ27, and DQ29–DQ36; it raises `DataQualityError` containing all failures. Individual checks can also be called independently. The pipeline runs these checks in `source_data_quality` after ingestion and before Silver transformations. Gold retains calendar validation, join-cardinality checks, and unresolved-key failures.
 
 ### DQ1: Completeness - ZIP Contains Required TXT Files
 
@@ -30,7 +30,7 @@ Source checks are implemented in `core/railway/data-quality/source.py`. Call `va
 | DQ5 | `trips.txt` | `trip_id`, `route_id` |
 | DQ6 | `stop_times.txt` | `trip_id`, `stop_id`, `arrival_time`, `departure_time`, `stop_sequence`, `stop_headsign`, `pickup_type`, `drop_off_type` |
 
-Other agency attributes are retained when present. Other trip attributes are retained except `shape_id` and `route_id`; the latter is used separately to resolve route keys.
+Other agency attributes are retained when present. Silver retains trip attributes including `shape_id` and `route_id`. Gold omits these from `dim_trip` and uses the Silver route association to resolve fact route keys.
 
 **Severity:** Critical
 
@@ -102,7 +102,7 @@ The station transformation selects only `StopArea:` rows and renames `stop_id` t
 
 **Severity:** Critical
 
-**Implementation:** `core/railway/data-quality/source.py::check_station_identifier_prefixes`; `core/railway/data-quality/transformed.py::check_station_identifier_prefixes` (dimension validation).
+**Implementation:** `core/railway/data-quality/source.py::check_station_prefixes`.
 
 ### DQ33–DQ36: Referential Integrity - Foreign Keys Resolve
 
@@ -123,4 +123,6 @@ Any unresolved reference, missing file or column, or empty required table must f
 
 **Implementation:** `core/railway/data-quality/source.py`: `check_routes_agency_references` (DQ33), `check_trips_route_references` (DQ34), `check_stop_times_trip_references` (DQ35), `check_stop_times_stop_references` (DQ36).
 
-## Processed Data Checks (Before Publishing)
+## Silver and Gold checks
+
+Source checks remain mandatory before Silver. Gold rejects unresolved fact keys, invalid join cardinalities, duplicate calendar exceptions, and invalid calendar codes/date ranges.
