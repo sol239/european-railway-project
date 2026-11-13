@@ -152,3 +152,13 @@ Grain: One row per active service and date.
 
 - `service_id`: Identifier of the active service.
 - `service_date`: Date on which the service operates.
+
+## Railway Atlas
+
+Railway Atlas is the project's frontend, built with Nuxt and CesiumJS. It provides an interactive map of stations and railway infrastructure, station timetables, estimated train positions, and network statistics.
+
+![Railway Atlas frontend](docs/atlas.png)
+
+## Contact
+
+David Valek — [david.valek17@gmail.com](mailto:david.valek17@gmail.com)
